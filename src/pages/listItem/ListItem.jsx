@@ -3,7 +3,11 @@ import { Link } from "react-router-dom";
 import { getItems } from "../../services/swapi-api";
 import { getQuatity } from "./utils";
 
-import styles from "./list-item.module.css";
+import styles from "./list-item.module.sass";
+import List from "../../components/list";
+import Element from "../../components/listItem/Element";
+import Button from "../../components/button/Button";
+import Form from "../../components/form";
 
 export default class ListItem extends Component {
   isLoaded = false;
@@ -13,8 +17,21 @@ export default class ListItem extends Component {
     count: 0,
     currentPage: 1,
   };
+  async componentDidUpdate(prevProps, prevState) {
+    const prevParams = prevProps?.match?.params?.entity || null;
+    const params = this.props?.match?.params?.entity || null;
 
+    if (prevParams !== params) {
+      await this.handleFetch();
+    }
+  }
   async componentDidMount() {
+    await this.handleFetch();
+  }
+  componentWillUnmount() {
+    this.isLoaded = false;
+  }
+  handleFetch = async () => {
     const {
       match: { params },
     } = this.props;
@@ -34,10 +51,7 @@ export default class ListItem extends Component {
     } catch (err) {
       console.log(err);
     }
-  }
-  componentWillUnmount() {
-    this.isLoaded = false;
-  }
+  };
   //ТУТ логику в componentDidUpdate
   handlePaginate = async (value) => {
     const { match } = this.props;
@@ -56,35 +70,34 @@ export default class ListItem extends Component {
     const { entities, load, count, currentPage } = this.state;
     const { match } = this.props;
     const { params } = match;
-    console.log(this.props);
     return (
       <div>
         {load && <div style={{ color: "red", fontSize: "26px" }}>LOAD!!!!</div>}
-        {entities?.length > 0 &&
-          entities.map((entity) => {
-            const arr = entity.url.split("/");
-            const id = arr[arr.length - 2];
-            return (
-              <div className={styles.wrapper} key={entity.name || entity.title}>
-                <Link
-                  to={`/item/${params.entity}/${id}`}
+        <List>
+          {entities?.length > 0 &&
+            entities.map((entity) => {
+              const arr = entity.url.split("/");
+              const id = arr[arr.length - 2];
+              return (
+                <Element
                   key={entity.name || entity.title}
-                >
-                  {entity.name || entity.title}
-                </Link>
-              </div>
-            );
-          })}
+                  id={id}
+                  item={entity}
+                  alias={params.entity}
+                />
+              );
+            })}
+        </List>
         <div>
-          <button
+          <Button
             type="button"
+            className={styles.button_back}
             onClick={() => {
-              // this.props.history.push("/");
               this.props.history.goBack();
             }}
           >
-            Go back
-          </button>
+            GO Back
+          </Button>
         </div>
         <div style={{ marginTop: "40px" }}>
           {entities?.length > 0 && (
@@ -104,27 +117,44 @@ export default class ListItem extends Component {
 function Paginator({ count, itemsOnPage, currentPage, handlePaginate }) {
   const ref = React.useRef(null);
 
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.focus();
-      // console.log(ref, "REF");
-    }
-  }, []);
+  // React.useEffect(() => {
+  //   if (ref.current) {
+  //     ref.current.focus();
+  //     // console.log(ref, "REF");
+  //   }
+  // }, []);
 
-  const pages = getQuatity(count, itemsOnPage);
-  console.log(pages, "PAGES");
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // console.log(ref.current.value, "REF");
-    handlePaginate(ref.current.value);
-  };
+  // const pages = getQuatity(count, itemsOnPage);
+  // console.log(pages, "PAGES");
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   // console.log(ref.current.value, "REF");
+  //   handlePaginate(ref.current.value);
+  // };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <input ref={ref} type="text" />
-        <button type="submit">click</button>
-      </form>
+      <Form
+        initialValues={{
+          page: "",
+        }}
+        formSubmit={() => {}}
+      >
+        {({ form, onChange }) => {
+          // console.log(renderProps, "RENDER");
+          return (
+            <>
+              <input
+                name="page"
+                type="text"
+                value={form["page"]}
+                onChange={onChange}
+              />
+              <Button type="submit">submit</Button>{" "}
+            </>
+          );
+        }}
+      </Form>
     </div>
   );
 }
